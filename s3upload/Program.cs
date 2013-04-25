@@ -12,7 +12,19 @@ namespace s3upload
 {
     class Program
     {
-        const string BUCKET_NAME = "mybucketname";
+        #region S3 Client
+        static string _bucketName = "";
+        static string BucketName
+        {
+            get 
+            {
+                if (_bucketName == "")
+                {
+                    _bucketName = ConfigurationManager.AppSettings["BucketName"];
+                }
+                return _bucketName;
+            }
+        }
         static AmazonS3Client _client = null;
         static AmazonS3Client Client
         {
@@ -25,6 +37,7 @@ namespace s3upload
                 return _client;
             }
         }
+        #endregion
 
         static int UploadedCnt = 0;
         static List<string> ExistKeys = new List<string>();
@@ -76,11 +89,11 @@ namespace s3upload
                 return;
             }
 
-            Console.WriteLine("[{0}]From:{1}", UploadedCnt, filePath);
-            Console.WriteLine("  To:{0}", s3Key);
+            Console.WriteLine("{0}>From:{1}", UploadedCnt.ToString().PadLeft(6,' '), filePath);
+            Console.WriteLine("         To:{0}", s3Key);
 
             PutObjectRequest request = new PutObjectRequest();
-            request.WithBucketName(BUCKET_NAME)
+            request.WithBucketName(BucketName)
                 .WithFilePath(filePath)
                 .WithKey(s3Key);
                 
@@ -96,7 +109,9 @@ namespace s3upload
             }
             catch (AmazonS3Exception ex)
             {
-                Console.WriteLine("  Failed:{0}\n  Msg:{1}", s3Key, ex.Message);
+                string eMsg = string.Format("  *Failed:{0}\n  Msg:{1}", s3Key, ex.Message);
+                Console.WriteLine(eMsg);
+                Log(eMsg);
             }
         }
 
@@ -122,7 +137,7 @@ namespace s3upload
         {
             prefix = prefix.Replace('\\','/').ToLower();
             var request = new ListObjectsRequest();
-            request.WithBucketName(BUCKET_NAME);
+            request.WithBucketName(BucketName);
             request.Prefix = prefix;
 
 
@@ -146,6 +161,30 @@ namespace s3upload
 
             Console.WriteLine("List current keys:{0}", allKeys.Count);
             return allKeys;
+        }
+
+        private static void Log(string eMsg)
+        {
+            string logFileName = "s3upload.log";
+
+            StreamWriter logWriter = null;
+            if (!File.Exists(logFileName))
+            {
+                logWriter = File.CreateText(logFileName);
+            }
+            else
+            {
+                logWriter = new StreamWriter(File.OpenWrite(logFileName));
+            }
+
+            try
+            {
+                logWriter.WriteLine("[0]>{1}", DateTime.Now, eMsg);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("error to write log");
+            }
         }
     }
 }
