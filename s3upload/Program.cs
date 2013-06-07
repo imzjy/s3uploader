@@ -6,6 +6,7 @@ using System.IO;
 using Amazon.S3.Model;
 using Amazon.S3;
 using System.Configuration;
+using System.Threading;
 
 
 namespace s3upload
@@ -154,12 +155,28 @@ namespace s3upload
 
 
             List<string> allKeys = new List<string>();
-            foreach (var s3Obj in response.S3Objects)
+            allKeys.AddRange(response.S3Objects.Select(s3Obj => s3Obj.Key));
+
+            //iterate the paging(aws can only return 1000 keys in a request)
+            while (response.IsTruncated)
             {
-                allKeys.Add(s3Obj.Key);
+                request.Marker = response.NextMarker;
+                response = new ListObjectsResponse();
+                try
+                {
+                    response = Client.ListObjects(request);
+                }
+                catch (Exception ex) 
+                {
+                    break;
+                }
+
+                allKeys.AddRange(response.S3Objects.Select(s3Obj => s3Obj.Key));
             }
 
+
             Console.WriteLine("List current keys:{0}", allKeys.Count);
+            Thread.Sleep(2000);
             return allKeys;
         }
 

@@ -18,9 +18,9 @@ open the App.config, and fill out with s3 bucket name and key/secret.
 </configuration>
 ```
 
-Usage:
+usage:
 ======
 
 ```text
-c:\>s3upload.exe project   #this will upload all files to 'mybucketname/project/xxxx' with lower key name.
+c:\>s3upload.exe project   #this will upload all files from  folder of 'project/' to 'mybucketname/project/xxxx' with lower key name.
 ```
